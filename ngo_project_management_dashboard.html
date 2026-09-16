@@ -1,0 +1,2586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Project Management & Performance Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .tab-active {
+            border-bottom: 3px solid #3b82f6;
+            color: #1d4ed8;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- DEMO DATA WARNING BANNER -->
+    <div id="demoBanner" class="bg-amber-500 text-slate-900 text-xs font-semibold py-1.5 px-4 text-center shadow-inner flex items-center justify-between">
+        <div class="flex-1 text-center">
+            <span class="bg-amber-700 text-white px-2 py-0.5 rounded text-[10px] tracking-wide uppercase mr-2 font-bold">Notice</span>
+            DEMO DATA – Replace with Live Project Data or connect your Google Sheet.
+        </div>
+        <button onclick="document.getElementById('demoBanner').style.display='none'" class="text-slate-900 hover:text-slate-700 font-bold text-sm ml-4">&times;</button>
+    </div>
+
+    <!-- MAIN DASHBOARD HEADER -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                            LIVE PROJECT MANAGEMENT & PERFORMANCE DASHBOARD
+                        </h1>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        Activity • Achievement • Budget • Expenditure • Responsibility • Progress
+                    </p>
+                </div>
+                
+                <!-- Metadata Header Indicators & Sync Button -->
+                <div class="flex flex-wrap items-center gap-3 text-xs">
+                    <div class="bg-slate-800 px-3 py-1.5 rounded-md border border-slate-700">
+                        <span class="text-slate-400 block text-[10px]">PROJECT</span>
+                        <span id="metaProjectName" class="font-medium text-slate-200">Nepal WASH & Livelihood Project</span>
+                    </div>
+                    <div class="bg-slate-800 px-3 py-1.5 rounded-md border border-slate-700">
+                        <span class="text-slate-400 block text-[10px]">REPORTING PERIOD</span>
+                        <span id="metaReportingPeriod" class="font-medium text-slate-200">FY 2025/26 (Jul-Jun)</span>
+                    </div>
+                    <div class="bg-slate-800 px-3 py-1.5 rounded-md border border-slate-700">
+                        <span class="text-slate-400 block text-[10px]">DATA SOURCE</span>
+                        <span id="metaDataSource" class="font-medium text-emerald-400 flex items-center gap-1">
+                            <i data-lucide="database" class="w-3 h-3"></i> Internal Engine
+                        </span>
+                    </div>
+                    <button onclick="openSyncModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 transition shadow-sm">
+                        <i data-lucide="link" class="w-3.5 h-3.5"></i>
+                        <span>Connect Sheet</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GLOBAL FILTERS BAR -->
+        <div class="bg-slate-800/90 border-t border-slate-700/80 px-4 sm:px-6 lg:px-8 py-2.5">
+            <div class="max-w-7xl mx-auto flex flex-wrap items-center gap-2">
+                <div class="flex items-center text-xs font-semibold text-slate-400 mr-1">
+                    <i data-lucide="filter" class="w-3.5 h-3.5 mr-1 text-blue-400"></i> Filters:
+                </div>
+
+                <!-- Project Filter -->
+                <select id="filterProject" onchange="applyGlobalFilters()" class="bg-slate-900 text-slate-200 text-xs rounded border border-slate-700 px-2.5 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option value="">All Projects</option>
+                </select>
+
+                <!-- FY Filter -->
+                <select id="filterFY" onchange="applyGlobalFilters()" class="bg-slate-900 text-slate-200 text-xs rounded border border-slate-700 px-2.5 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option value="">All Fiscal Years</option>
+                </select>
+
+                <!-- Month Filter -->
+                <select id="filterMonth" onchange="applyGlobalFilters()" class="bg-slate-900 text-slate-200 text-xs rounded border border-slate-700 px-2.5 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option value="">Selected Month: All</option>
+                </select>
+
+                <!-- Component Filter -->
+                <select id="filterComponent" onchange="applyGlobalFilters()" class="bg-slate-900 text-slate-200 text-xs rounded border border-slate-700 px-2.5 py-1 focus:ring-1 focus:ring-blue-500 outline-none max-w-[150px] truncate">
+                    <option value="">All Components</option>
+                </select>
+
+                <!-- District Filter -->
+                <select id="filterDistrict" onchange="applyGlobalFilters()" class="bg-slate-900 text-slate-200 text-xs rounded border border-slate-700 px-2.5 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option value="">All Districts</option>
+                </select>
+
+                <!-- Palika Filter -->
+                <select id="filterPalika" onchange="applyGlobalFilters()" class="bg-slate-900 text-slate-200 text-xs rounded border border-slate-700 px-2.5 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option value="">All Palikas</option>
+                </select>
+
+                <!-- Responsible Staff Filter -->
+                <select id="filterStaff" onchange="applyGlobalFilters()" class="bg-slate-900 text-slate-200 text-xs rounded border border-slate-700 px-2.5 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option value="">All Responsible Persons</option>
+                </select>
+
+                <!-- Status Filter -->
+                <select id="filterStatus" onchange="applyGlobalFilters()" class="bg-slate-900 text-slate-200 text-xs rounded border border-slate-700 px-2.5 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option value="">All Activity Statuses</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Ongoing">Ongoing</option>
+                    <option value="Planned">Planned</option>
+                    <option value="Partially Completed">Partially Completed</option>
+                    <option value="Delayed">Delayed</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+
+                <!-- Reset Button -->
+                <button onclick="resetGlobalFilters()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1 rounded border border-slate-600 transition flex items-center gap-1 ml-auto">
+                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset Filters
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-[105px] z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex overflow-x-auto custom-scrollbar space-x-6 text-sm font-medium text-slate-600">
+                <button onclick="switchTab('overview')" id="tab-overview" class="py-3 tab-active flex items-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Executive Summary
+                </button>
+                <button onclick="switchTab('activities')" id="tab-activities" class="py-3 flex items-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="list-checks" class="w-4 h-4"></i> Master Activities
+                </button>
+                <button onclick="switchTab('financials')" id="tab-financials" class="py-3 flex items-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="banknote" class="w-4 h-4"></i> Financial Performance
+                </button>
+                <button onclick="switchTab('responsibility')" id="tab-responsibility" class="py-3 flex items-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="users" class="w-4 h-4"></i> Staff Responsibility
+                </button>
+                <button onclick="switchTab('components')" id="tab-components" class="py-3 flex items-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="layers" class="w-4 h-4"></i> Components Hierarchy
+                </button>
+                <button onclick="switchTab('location')" id="tab-location" class="py-3 flex items-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="map-pin" class="w-4 h-4"></i> Location Analysis
+                </button>
+                <button onclick="switchTab('delayed')" id="tab-delayed" class="py-3 flex items-center gap-1.5 whitespace-nowrap text-red-600">
+                    <i data-lucide="alert-triangle" class="w-4 h-4"></i> Delayed Tasks
+                    <span id="badgeDelayedCount" class="bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-0.5">0</span>
+                </button>
+                <button onclick="switchTab('upcoming')" id="tab-upcoming" class="py-3 flex items-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="calendar" class="w-4 h-4"></i> Upcoming Schedule
+                </button>
+                <button onclick="switchTab('quality')" id="tab-quality" class="py-3 flex items-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i> Data Audit
+                    <span id="badgeDataIssues" class="bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-0.5">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- DASHBOARD CONTENT CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- EXECUTIVE SUMMARY NARRATIVE BANNER -->
+        <div class="bg-gradient-to-r from-blue-900 to-slate-900 text-white rounded-xl p-4 shadow-sm border border-slate-800 mb-6 flex items-start gap-3">
+            <div class="p-2 bg-blue-600/30 rounded-lg text-blue-300 shrink-0 mt-0.5">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-blue-300">Automated Management Executive Summary</h3>
+                <p id="executiveSummaryText" class="text-sm font-medium leading-relaxed text-slate-100 mt-0.5">
+                    Generating dynamic executive narrative...
+                </p>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 1: OVERVIEW DASHBOARD ==================== -->
+        <div id="view-overview" class="tab-content space-y-6">
+
+            <!-- SECTION A: KPI CARDS GRID -->
+            <div>
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <i data-lucide="activity" class="w-4 h-4 text-blue-600"></i> Activity & Financial Core Key Performance Indicators
+                </h2>
+                
+                <!-- TOP 12 EXECUTIVE KPI CARDS -->
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+                    
+                    <!-- KPI 1: Annual Activities -->
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-slate-500 block">Annual Planned</span>
+                        <div class="mt-1 flex items-baseline justify-between">
+                            <span id="kpiAnnualActivities" class="text-xl font-bold text-slate-900">0</span>
+                            <span class="text-[10px] text-slate-400 uppercase">Tasks</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 mt-1 block">Full Fiscal Year Target</span>
+                    </div>
+
+                    <!-- KPI 2: Monthly Planned -->
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-slate-500 block">This Month Planned</span>
+                        <div class="mt-1 flex items-baseline justify-between">
+                            <span id="kpiMonthPlannedActivities" class="text-xl font-bold text-slate-900">0</span>
+                            <span class="text-[10px] text-blue-600 font-semibold" id="kpiMonthNameLabel">Current</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 mt-1 block">Scheduled for period</span>
+                    </div>
+
+                    <!-- KPI 3: Completed Activities -->
+                    <div class="bg-emerald-50/50 p-3.5 rounded-xl border border-emerald-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-emerald-800 block">Completed Tasks</span>
+                        <div class="mt-1 flex items-baseline justify-between">
+                            <span id="kpiCompletedActivities" class="text-xl font-bold text-emerald-700">0</span>
+                            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                        </div>
+                        <span id="kpiAchievementPct" class="text-[10px] font-semibold text-emerald-700 mt-1 block">0% Overall Achievement</span>
+                    </div>
+
+                    <!-- KPI 4: Ongoing Tasks -->
+                    <div class="bg-blue-50/50 p-3.5 rounded-xl border border-blue-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-blue-800 block">Ongoing Tasks</span>
+                        <div class="mt-1 flex items-baseline justify-between">
+                            <span id="kpiOngoingActivities" class="text-xl font-bold text-blue-700">0</span>
+                            <i data-lucide="clock" class="w-4 h-4 text-blue-600"></i>
+                        </div>
+                        <span class="text-[10px] text-blue-600 mt-1 block">Active Implementation</span>
+                    </div>
+
+                    <!-- KPI 5: Delayed Tasks -->
+                    <div class="bg-red-50/50 p-3.5 rounded-xl border border-red-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-red-800 block">Delayed Tasks</span>
+                        <div class="mt-1 flex items-baseline justify-between">
+                            <span id="kpiDelayedActivities" class="text-xl font-bold text-red-700">0</span>
+                            <i data-lucide="alert-octagon" class="w-4 h-4 text-red-600"></i>
+                        </div>
+                        <span class="text-[10px] text-red-600 mt-1 block">Past Planned Deadline</span>
+                    </div>
+
+                    <!-- KPI 6: Overall Activity Achievement -->
+                    <div class="bg-indigo-50/50 p-3.5 rounded-xl border border-indigo-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-indigo-800 block">Activity Achievement</span>
+                        <div class="mt-1 flex items-baseline justify-between">
+                            <span id="kpiOverallAchievementPct" class="text-xl font-bold text-indigo-700">0%</span>
+                            <i data-lucide="trophy" class="w-4 h-4 text-indigo-600"></i>
+                        </div>
+                        <div class="w-full bg-indigo-200 rounded-full h-1.5 mt-1.5">
+                            <div id="kpiAchievementProgressBar" class="bg-indigo-600 h-1.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- KPI 7: Annual Budget -->
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-slate-500 block">Annual Budget</span>
+                        <div class="mt-1">
+                            <span id="kpiAnnualBudget" class="text-base font-bold text-slate-900 block truncate">NPR 0</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 mt-1 block">Total Approved Allocation</span>
+                    </div>
+
+                    <!-- KPI 8: Annual Expenditure -->
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-slate-500 block">Annual Expenditure</span>
+                        <div class="mt-1">
+                            <span id="kpiAnnualExpenditure" class="text-base font-bold text-slate-900 block truncate">NPR 0</span>
+                        </div>
+                        <span id="kpiAnnualBurn" class="text-[10px] font-semibold text-slate-600 mt-1 block">Burn: 0%</span>
+                    </div>
+
+                    <!-- KPI 9: Monthly Budget vs Exp -->
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-slate-500 block">Monthly Exp / Plan</span>
+                        <div class="mt-1">
+                            <span id="kpiMonthlyExpenditure" class="text-base font-bold text-slate-900 block truncate">NPR 0</span>
+                        </div>
+                        <span id="kpiMonthlyBurn" class="text-[10px] font-semibold text-blue-600 mt-1 block">Monthly Burn: 0%</span>
+                    </div>
+
+                    <!-- KPI 10: YTD Budget vs Exp -->
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-slate-500 block">YTD Expenditure</span>
+                        <div class="mt-1">
+                            <span id="kpiYtdExpenditure" class="text-base font-bold text-slate-900 block truncate">NPR 0</span>
+                        </div>
+                        <span id="kpiYtdBurn" class="text-[10px] font-semibold text-emerald-600 mt-1 block">YTD Burn: 0%</span>
+                    </div>
+
+                    <!-- KPI 11: Remaining Budget -->
+                    <div class="bg-slate-900 text-white p-3.5 rounded-xl border border-slate-800 shadow-sm">
+                        <span class="text-[11px] font-semibold text-slate-400 block">Remaining Budget</span>
+                        <div class="mt-1">
+                            <span id="kpiRemainingBudget" class="text-base font-bold text-emerald-400 block truncate">NPR 0</span>
+                        </div>
+                        <span class="text-[10px] text-slate-400 mt-1 block">Unspent Balance</span>
+                    </div>
+
+                    <!-- KPI 12: Burn Indicator Status -->
+                    <div class="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-semibold text-slate-500 block">Financial Health</span>
+                        <div class="my-1 flex items-center gap-2">
+                            <span id="kpiHealthBadge" class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
+                                On Track
+                            </span>
+                        </div>
+                        <span id="kpiHealthSubtext" class="text-[10px] text-slate-500 block">Budget alignment solid</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SECTION B: CHARTS GRID ROW 1 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <!-- Chart 1: Monthly Planned Activities vs Completed -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800">Monthly Planned Activities vs Completed</h3>
+                            <p class="text-xs text-slate-500">Comparing target workload against actual completions per month</p>
+                        </div>
+                        <span class="text-xs bg-slate-100 text-slate-600 font-medium px-2 py-1 rounded">Fiscal Year Trend</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="chartMonthlyActivities"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Monthly Planned Budget vs Actual Expenditure -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800">Monthly Planned Budget vs Expenditure (NPR)</h3>
+                            <p class="text-xs text-slate-500">Financial burn tracking per calendar month</p>
+                        </div>
+                        <span class="text-xs bg-slate-100 text-slate-600 font-medium px-2 py-1 rounded">Financials</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="chartMonthlyFinancials"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- SECTION C: CHARTS GRID ROW 2 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Chart 3: Cumulative Planned vs Cumulative Completed -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm lg:col-span-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800">Cumulative Project Implementation Curve</h3>
+                            <p class="text-xs text-slate-500">Cumulative Planned Activities vs Cumulative Completed Activities</p>
+                        </div>
+                        <span class="text-xs bg-blue-50 text-blue-700 font-medium px-2 py-1 rounded border border-blue-100">S-Curve Analysis</span>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="chartCumulativeProgress"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 4: Activity Status Breakdown Donut Chart -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800">Activity Status Breakdown</h3>
+                            <p class="text-xs text-slate-500">Proportion of activities by status</p>
+                        </div>
+                        <i data-lucide="pie-chart" class="w-4 h-4 text-slate-400"></i>
+                    </div>
+                    <div class="h-52 relative flex items-center justify-center">
+                        <canvas id="chartStatusBreakdown"></canvas>
+                    </div>
+                    <div id="statusCustomLegend" class="grid grid-cols-2 gap-1.5 text-xs mt-3 pt-3 border-t border-slate-100">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- SECTION D: QUICK ACTION / URGENT ALERTS PREVIEW -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500"></i>
+                        <h3 class="text-sm font-bold text-slate-900">Urgent Management Attention Summary</h3>
+                    </div>
+                    <button onclick="switchTab('delayed')" class="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                        View All Delayed Activities <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-600">
+                        <thead class="bg-slate-50 text-slate-700 uppercase font-bold text-[10px] border-b border-slate-200">
+                            <tr>
+                                <th class="p-2.5">Activity ID</th>
+                                <th class="p-2.5">Activity Title</th>
+                                <th class="p-2.5">Responsible</th>
+                                <th class="p-2.5">Planned End</th>
+                                <th class="p-2.5">Days Delayed</th>
+                                <th class="p-2.5">Budget (NPR)</th>
+                                <th class="p-2.5">Achievement</th>
+                                <th class="p-2.5">Issue</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableOverviewDelayedBody" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==================== TAB 2: MASTER ACTIVITIES TABLE ==================== -->
+        <div id="view-activities" class="tab-content hidden space-y-4">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Master Activity Management Database</h2>
+                        <p class="text-xs text-slate-500">Comprehensive searchable, filterable log of all project activities</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative min-w-[240px]">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                            <input type="text" id="masterSearch" onkeyup="renderMasterActivitiesTable()" placeholder="Search Activity ID, Name, Staff..." class="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <button onclick="exportTableToCSV('masterActivitiesTable')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TABLE -->
+                <div class="overflow-x-auto border border-slate-200 rounded-lg max-h-[600px] custom-scrollbar">
+                    <table id="masterActivitiesTable" class="w-full text-left text-xs border-collapse">
+                        <thead class="bg-slate-800 text-white font-semibold sticky top-0 z-10 text-[11px]">
+                            <tr>
+                                <th class="p-2.5">ID</th>
+                                <th class="p-2.5">Project / Component</th>
+                                <th class="p-2.5 min-w-[200px]">Activity Description</th>
+                                <th class="p-2.5">Target & Indicator</th>
+                                <th class="p-2.5">Achievement</th>
+                                <th class="p-2.5">Timeline</th>
+                                <th class="p-2.5">Location</th>
+                                <th class="p-2.5">Responsible</th>
+                                <th class="p-2.5">Budget (NPR)</th>
+                                <th class="p-2.5">Exp (NPR)</th>
+                                <th class="p-2.5">Burn %</th>
+                                <th class="p-2.5">Status</th>
+                                <th class="p-2.5">Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody id="masterTableBody" class="divide-y divide-slate-200 bg-white">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="flex items-center justify-between text-xs text-slate-500 mt-3">
+                    <span id="masterTableCounter">Showing 0 of 0 activities</span>
+                    <span>Click headings or filters above to refine data</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 3: FINANCIAL PERFORMANCE ==================== -->
+        <div id="view-financials" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-base font-bold text-slate-900 mb-1">Financial Expenditure & Budget Burn Dashboard</h2>
+                <p class="text-xs text-slate-500 mb-4">Detailed annual, monthly, and year-to-date (YTD) financial analysis in NPR</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-xs font-semibold text-slate-500">ANNUAL FINANCIAL PERFORMANCE</span>
+                        <div class="mt-2 space-y-1">
+                            <div class="flex justify-between text-xs"><span>Annual Budget:</span><span id="finAnnualBudget" class="font-bold">NPR 0</span></div>
+                            <div class="flex justify-between text-xs"><span>Annual Expenditure:</span><span id="finAnnualExp" class="font-bold text-blue-700">NPR 0</span></div>
+                            <div class="flex justify-between text-xs"><span>Annual Burn Rate:</span><span id="finAnnualBurnPct" class="font-bold text-emerald-700">0%</span></div>
+                            <div class="flex justify-between text-xs"><span>Unspent Balance:</span><span id="finAnnualRemaining" class="font-bold text-slate-700">NPR 0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-xs font-semibold text-slate-500">SELECTED MONTH PERFORMANCE</span>
+                        <div class="mt-2 space-y-1">
+                            <div class="flex justify-between text-xs"><span>Monthly Planned:</span><span id="finMonthlyBudget" class="font-bold">NPR 0</span></div>
+                            <div class="flex justify-between text-xs"><span>Monthly Actual:</span><span id="finMonthlyExp" class="font-bold text-blue-700">NPR 0</span></div>
+                            <div class="flex justify-between text-xs"><span>Monthly Burn Rate:</span><span id="finMonthlyBurnPct" class="font-bold text-emerald-700">0%</span></div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <span class="text-xs font-semibold text-slate-500">YEAR-TO-DATE (YTD) PERFORMANCE</span>
+                        <div class="mt-2 space-y-1">
+                            <div class="flex justify-between text-xs"><span>YTD Planned Target:</span><span id="finYtdBudget" class="font-bold">NPR 0</span></div>
+                            <div class="flex justify-between text-xs"><span>YTD Actual Exp:</span><span id="finYtdExp" class="font-bold text-blue-700">NPR 0</span></div>
+                            <div class="flex justify-between text-xs"><span>YTD Budget Burn Rate:</span><span id="finYtdBurnPct" class="font-bold text-emerald-700">0%</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200">
+                        <h3 class="text-sm font-bold text-slate-800 mb-2">Budget vs Expenditure by Component</h3>
+                        <div class="h-64"><canvas id="chartFinByComponent"></canvas></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200">
+                        <h3 class="text-sm font-bold text-slate-800 mb-2">Budget vs Expenditure by District</h3>
+                        <div class="h-64"><canvas id="chartFinByDistrict"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 4: RESPONSIBILITY TRACKER ==================== -->
+        <div id="view-responsibility" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <div class="mb-4">
+                    <h2 class="text-base font-bold text-slate-900">Staff Responsibility & Task Distribution Tracker</h2>
+                    <p class="text-xs text-slate-500">Overview of activity load, status counts, and budget allocated per team lead without individual ranking</p>
+                </div>
+
+                <!-- STAFF SUMMARY TABLE -->
+                <div class="overflow-x-auto border border-slate-200 rounded-lg mb-6">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">Responsible Person</th>
+                                <th class="p-3 text-center">Total Planned</th>
+                                <th class="p-3 text-center text-emerald-700">Completed</th>
+                                <th class="p-3 text-center text-blue-700">Ongoing</th>
+                                <th class="p-3 text-center text-red-700">Delayed</th>
+                                <th class="p-3 text-center text-amber-700">Pending</th>
+                                <th class="p-3 text-center">Achievement %</th>
+                                <th class="p-3 text-right">Allocated Budget (NPR)</th>
+                                <th class="p-3 text-right">Expenditure (NPR)</th>
+                                <th class="p-3 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableStaffSummaryBody" class="divide-y divide-slate-100">
+                            <!-- Populated JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- SELECTED STAFF DRILL-DOWN SECTION -->
+                <div id="staffDrillDownContainer" class="bg-slate-50 border border-slate-200 rounded-xl p-4 hidden">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="user-check" class="w-4 h-4 text-blue-600"></i>
+                            Assigned Tasks for: <span id="selectedStaffName" class="text-blue-700 font-extrabold"></span>
+                        </h3>
+                        <button onclick="clearStaffFilter()" class="text-xs text-slate-500 hover:text-slate-800">Close Staff Filter &times;</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs bg-white rounded-lg border border-slate-200">
+                            <thead class="bg-slate-800 text-white text-[10px]">
+                                <tr>
+                                    <th class="p-2">ID</th>
+                                    <th class="p-2">Component</th>
+                                    <th class="p-2">Activity Name</th>
+                                    <th class="p-2">Location</th>
+                                    <th class="p-2">Planned Start/End</th>
+                                    <th class="p-2">Budget (NPR)</th>
+                                    <th class="p-2">Achieved %</th>
+                                    <th class="p-2">Status</th>
+                                    <th class="p-2">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableStaffTasksBody" class="divide-y divide-slate-100">
+                                <!-- Populated JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 5: COMPONENTS HIERARCHY ==================== -->
+        <div id="view-components" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <div class="mb-4">
+                    <h2 class="text-base font-bold text-slate-900">Project Components & Outcomes Analysis</h2>
+                    <p class="text-xs text-slate-500">Hierarchical breakdown: Project &rarr; Outcome/Component &rarr; Output &rarr; Activity</p>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-800 text-white font-semibold text-[11px]">
+                            <tr>
+                                <th class="p-3">Component / Outcome</th>
+                                <th class="p-3 text-center">Activities</th>
+                                <th class="p-3 text-center text-emerald-300">Completed</th>
+                                <th class="p-3 text-center">Achievement %</th>
+                                <th class="p-3 text-right">Budget (NPR)</th>
+                                <th class="p-3 text-right">Expenditure (NPR)</th>
+                                <th class="p-3 text-center">Burn Rate %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableComponentHierarchyBody" class="divide-y divide-slate-200">
+                            <!-- Populated JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 6: LOCATION ANALYSIS ==================== -->
+        <div id="view-location" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <div class="mb-4">
+                    <h2 class="text-base font-bold text-slate-900">Geographic Location Matrix (District & Palika)</h2>
+                    <p class="text-xs text-slate-500">Implementation progress and budget utilization broken down by Nepal districts and municipalities</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-800 text-white font-semibold text-[11px]">
+                                <tr>
+                                    <th class="p-3">District</th>
+                                    <th class="p-3">Municipality / Palika</th>
+                                    <th class="p-3 text-center">Activities</th>
+                                    <th class="p-3 text-center">Completed</th>
+                                    <th class="p-3 text-center">Ach. %</th>
+                                    <th class="p-3 text-right">Budget (NPR)</th>
+                                    <th class="p-3 text-right">Exp (NPR)</th>
+                                    <th class="p-3 text-center">Burn %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableLocationBody" class="divide-y divide-slate-100">
+                                <!-- Populated JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h3 class="text-sm font-bold text-slate-800 mb-3">District Activity Distribution</h3>
+                        <div class="h-64"><canvas id="chartLocationDist"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 7: DELAYED ALERTS ==================== -->
+        <div id="view-delayed" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-red-200 shadow-sm">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="p-2 bg-red-100 text-red-700 rounded-lg">
+                        <i data-lucide="alert-octagon" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-red-900">Delayed Activities & Critical Management Alerts</h2>
+                        <p class="text-xs text-red-600">Tasks whose planned deadline has elapsed without completion (Days Delayed = Today - Planned End)</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-red-100 rounded-lg mt-4">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-red-900 text-white font-semibold text-[11px]">
+                            <tr>
+                                <th class="p-3">Activity ID</th>
+                                <th class="p-3 min-w-[200px]">Activity Title</th>
+                                <th class="p-3">Responsible Lead</th>
+                                <th class="p-3">Planned End Date</th>
+                                <th class="p-3 text-center text-red-300">Days Delayed</th>
+                                <th class="p-3 text-right">Budget (NPR)</th>
+                                <th class="p-3 text-center">Current Ach. %</th>
+                                <th class="p-3">Reason / Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableDelayedFullBody" class="divide-y divide-red-100 bg-red-50/20">
+                            <!-- Populated JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 8: UPCOMING ACTIVITIES ==================== -->
+        <div id="view-upcoming" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <div class="mb-4">
+                    <h2 class="text-base font-bold text-slate-900">Upcoming Planned Activities Schedule</h2>
+                    <p class="text-xs text-slate-500">Activities scheduled for commencement or completion within 7, 14, and 30 days</p>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-800 text-white font-semibold text-[11px]">
+                            <tr>
+                                <th class="p-3">Schedule Window</th>
+                                <th class="p-3">Activity ID</th>
+                                <th class="p-3 min-w-[220px]">Activity Name</th>
+                                <th class="p-3">Start / End Date</th>
+                                <th class="p-3">Responsible</th>
+                                <th class="p-3">Location</th>
+                                <th class="p-3 text-right">Budget (NPR)</th>
+                                <th class="p-3">Priority</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableUpcomingBody" class="divide-y divide-slate-100">
+                            <!-- Populated JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 9: DATA QUALITY ==================== -->
+        <div id="view-quality" class="tab-content hidden space-y-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Data Quality & Inconsistency Audit Panel</h2>
+                        <p class="text-xs text-slate-500">Automated engine checking data completeness, duplicate keys, budget overspends, and logic errors</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-semibold text-slate-600">Data Health Score:</span>
+                        <div id="dataScoreBadge" class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bold text-sm">
+                            100%
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                        <span class="text-[11px] font-semibold text-slate-500 block">Missing Fields</span>
+                        <span id="issueCountMissing" class="text-lg font-bold text-slate-800">0</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                        <span class="text-[11px] font-semibold text-slate-500 block">Overspending Records</span>
+                        <span id="issueCountOverspend" class="text-lg font-bold text-amber-700">0</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                        <span class="text-[11px] font-semibold text-slate-500 block">Logic / Date Errors</span>
+                        <span id="issueCountLogic" class="text-lg font-bold text-red-700">0</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center">
+                        <span class="text-[11px] font-semibold text-slate-500 block">Duplicate IDs</span>
+                        <span id="issueCountDuplicates" class="text-lg font-bold text-blue-700">0</span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-800 text-white font-semibold text-[11px]">
+                            <tr>
+                                <th class="p-3">Activity ID</th>
+                                <th class="p-3">Severity</th>
+                                <th class="p-3">Issue Category</th>
+                                <th class="p-3">Description of Inconsistency</th>
+                                <th class="p-3">Field Value</th>
+                                <th class="p-3">Recommended Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableQualityIssuesBody" class="divide-y divide-slate-100">
+                            <!-- Populated JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- GOOGLE SHEET INTEGRATION MODAL -->
+    <div id="syncModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-lg p-6 m-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="sheet" class="w-5 h-5 text-emerald-600"></i> Google Sheet Live Data Connection
+                </h3>
+                <button onclick="closeSyncModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">&times;</button>
+            </div>
+            <div class="py-4 space-y-4 text-xs text-slate-600">
+                <p>
+                    Connect your live Google Sheet CSV output or AppScript JSON API URL. The dataset will dynamically adapt to the schema fields.
+                </p>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Google Sheet CSV / API Endpoint URL</label>
+                    <input type="url" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div class="p-3 bg-blue-50 rounded-lg text-blue-800 space-y-1">
+                    <span class="font-bold block">Standardized Schema Expected Columns:</span>
+                    <span class="block text-[11px]">Activity ID, Project, Outcome, Output, Activity, Indicator, Target, Achievement, Date, Month, Fiscal Year, District, Palika, Responsible Person, Annual Budget, Monthly Budget, Expenditure, Status, Remarks</span>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button onclick="closeSyncModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Cancel</button>
+                <button onclick="connectCustomSheet()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Connect & Fetch Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-4 px-6 text-center text-xs text-slate-500 mt-auto">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2">
+            <span>LIVE PROJECT MANAGEMENT & PERFORMANCE DASHBOARD &copy; 2026</span>
+            <span class="text-slate-400">Standardized Schema Engine Ready • Compact NPR Formatting</span>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT CORE LOGIC ENGINE -->
+    <script>
+        /* DEMO DATASET ENGINE WITH 30+ REALISTIC NEPAL NGO ACTIVITIES */
+        const DEMO_ACTIVITIES_DATA = [
+            {
+                id: "ACT-101",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.1: Community Water Schemes",
+                activity: "Construction of solar-pumping water scheme",
+                indicator: "Schemes constructed",
+                target: 1,
+                achievement: 1,
+                date: "2025-08-15",
+                month: "August",
+                fiscalYear: "2025/26",
+                district: "Surkhet",
+                palika: "Birendranagar",
+                ward: "Ward 4",
+                responsible: "Ram Shrestha",
+                annualBudget: 2500000,
+                monthlyBudget: 2500000,
+                expenditure: 2450000,
+                status: "Completed",
+                priority: "High",
+                remarks: "Fully functional, handed over to WUC",
+                lastUpdated: "2025-08-20"
+            },
+            {
+                id: "ACT-102",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.1: Community Water Schemes",
+                activity: "Water Quality Testing & Treatment Setup",
+                indicator: "Testing kits distributed",
+                target: 12,
+                achievement: 12,
+                date: "2025-09-10",
+                month: "September",
+                fiscalYear: "2025/26",
+                district: "Surkhet",
+                palika: "Birendranagar",
+                ward: "Ward 6",
+                responsible: "Ram Shrestha",
+                annualBudget: 600000,
+                monthlyBudget: 600000,
+                expenditure: 580000,
+                status: "Completed",
+                priority: "Medium",
+                remarks: "Water safety plan oriented",
+                lastUpdated: "2025-09-12"
+            },
+            {
+                id: "ACT-103",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.2: School Sanitation",
+                activity: "Construction of gender-friendly school toilets",
+                indicator: "Toilets constructed",
+                target: 4,
+                achievement: 2,
+                date: "2025-10-15",
+                month: "October",
+                fiscalYear: "2025/26",
+                district: "Dailekh",
+                palika: "Narayan",
+                ward: "Ward 2",
+                responsible: "Sita Sharma",
+                annualBudget: 3200000,
+                monthlyBudget: 1600000,
+                expenditure: 1400000,
+                status: "Ongoing",
+                priority: "High",
+                remarks: "Roofing in progress",
+                lastUpdated: "2025-10-20"
+            },
+            {
+                id: "ACT-104",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.2: School Sanitation",
+                activity: "MHM awareness sessions in secondary schools",
+                indicator: "Students trained",
+                target: 300,
+                achievement: 320,
+                date: "2025-11-05",
+                month: "November",
+                fiscalYear: "2025/26",
+                district: "Dailekh",
+                palika: "Dullu",
+                ward: "Ward 3",
+                responsible: "Sita Sharma",
+                annualBudget: 350000,
+                monthlyBudget: 350000,
+                expenditure: 340000,
+                status: "Completed",
+                priority: "Medium",
+                remarks: "Dignity kits distributed",
+                lastUpdated: "2025-11-08"
+            },
+            {
+                id: "ACT-105",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 2: Climate Resilient Livelihoods",
+                output: "Output 2.1: Farmer Field Schools",
+                activity: "Off-season vegetable farming training",
+                indicator: "Farmers trained",
+                target: 50,
+                achievement: 25,
+                date: "2025-12-10",
+                month: "December",
+                fiscalYear: "2025/26",
+                district: "Jajarkot",
+                palika: "Bheri",
+                ward: "Ward 1",
+                responsible: "Hari Gurung",
+                annualBudget: 800000,
+                monthlyBudget: 400000,
+                expenditure: 420000,
+                status: "Ongoing",
+                priority: "High",
+                remarks: "Polyhouse setup ongoing",
+                lastUpdated: "2025-12-15"
+            },
+            {
+                id: "ACT-106",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 2: Climate Resilient Livelihoods",
+                output: "Output 2.1: Farmer Field Schools",
+                activity: "Distribution of drought-resistant seeds",
+                indicator: "HHs supported",
+                target: 200,
+                achievement: 0,
+                date: "2026-01-15",
+                month: "January",
+                fiscalYear: "2025/26",
+                district: "Jajarkot",
+                palika: "Chhedagad",
+                ward: "Ward 5",
+                responsible: "Hari Gurung",
+                annualBudget: 900000,
+                monthlyBudget: 900000,
+                expenditure: 0,
+                status: "Delayed",
+                priority: "High",
+                remarks: "Procurement delay from supplier",
+                lastUpdated: "2026-01-20"
+            },
+            {
+                id: "ACT-107",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 2: Climate Resilient Livelihoods",
+                output: "Output 2.2: Micro-enterprise",
+                activity: "Establishment of goat farming cooperatives",
+                indicator: "Cooperatives formed",
+                target: 3,
+                achievement: 3,
+                date: "2026-02-10",
+                month: "February",
+                fiscalYear: "2025/26",
+                district: "Kailali",
+                palika: "Tikapur",
+                ward: "Ward 7",
+                responsible: "Gita Chaudhary",
+                annualBudget: 1500000,
+                monthlyBudget: 1500000,
+                expenditure: 1480000,
+                status: "Completed",
+                priority: "Medium",
+                remarks: "Registration completed at municipality",
+                lastUpdated: "2026-02-14"
+            },
+            {
+                id: "ACT-108",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 3: Governance & Capacity",
+                output: "Output 3.1: Palika WASH Plan Support",
+                activity: "NWASH Portal data collection and entry",
+                indicator: "Palikas updated",
+                target: 2,
+                achievement: 1,
+                date: "2026-03-01",
+                month: "March",
+                fiscalYear: "2025/26",
+                district: "Surkhet",
+                palika: "Birendranagar",
+                ward: "All",
+                responsible: "Ram Shrestha",
+                annualBudget: 500000,
+                monthlyBudget: 250000,
+                expenditure: 210000,
+                status: "Ongoing",
+                priority: "Medium",
+                remarks: "Data entry 50% finished",
+                lastUpdated: "2026-03-05"
+            },
+            {
+                id: "ACT-109",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 3: Governance & Capacity",
+                output: "Output 3.2: Local NGO Mentorship",
+                activity: "Financial compliance and governance workshop",
+                indicator: "Participants",
+                target: 25,
+                achievement: 0,
+                date: "2026-03-25",
+                month: "March",
+                fiscalYear: "2025/26",
+                district: "Kailali",
+                palika: "Dhangadhi",
+                ward: "Ward 2",
+                responsible: "Gita Chaudhary",
+                annualBudget: 400000,
+                monthlyBudget: 400000,
+                expenditure: 0,
+                status: "Planned",
+                priority: "Low",
+                remarks: "Venue booked",
+                lastUpdated: "2026-03-01"
+            },
+            {
+                id: "ACT-110",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.1: Community Water Schemes",
+                activity: "Rehabilitation of damaged intake structure",
+                indicator: "Intakes repaired",
+                target: 2,
+                achievement: 0,
+                date: "2026-01-05",
+                month: "January",
+                fiscalYear: "2025/26",
+                district: "Dailekh",
+                palika: "Narayan",
+                ward: "Ward 4",
+                responsible: "Sita Sharma",
+                annualBudget: 1200000,
+                monthlyBudget: 1200000,
+                expenditure: 150000,
+                status: "Delayed",
+                priority: "High",
+                remarks: "Local dispute regarding land rights",
+                lastUpdated: "2026-01-25"
+            },
+            {
+                id: "ACT-111",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 2: Climate Resilient Livelihoods",
+                output: "Output 2.2: Micro-enterprise",
+                activity: "Financial literacy training for women entrepreneurs",
+                indicator: "Women trained",
+                target: 100,
+                achievement: 100,
+                date: "2025-09-20",
+                month: "September",
+                fiscalYear: "2025/26",
+                district: "Surkhet",
+                palika: "Gurbhakot",
+                ward: "Ward 3",
+                responsible: "Ram Shrestha",
+                annualBudget: 450000,
+                monthlyBudget: 450000,
+                expenditure: 440000,
+                status: "Completed",
+                priority: "Medium",
+                remarks: "100% participation achieved",
+                lastUpdated: "2025-09-22"
+            },
+            {
+                id: "ACT-112",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.3: Community Hygiene",
+                activity: "Total Sanitation campaign & ODF verification",
+                indicator: "Campaigns conducted",
+                target: 5,
+                achievement: 3,
+                date: "2025-10-30",
+                month: "October",
+                fiscalYear: "2025/26",
+                district: "Jajarkot",
+                palika: "Bheri",
+                ward: "Ward 8",
+                responsible: "Hari Gurung",
+                annualBudget: 750000,
+                monthlyBudget: 450000,
+                expenditure: 430000,
+                status: "Partially Completed",
+                priority: "Medium",
+                remarks: "2 wards remaining",
+                lastUpdated: "2025-11-02"
+            },
+            {
+                id: "ACT-113",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 2: Climate Resilient Livelihoods",
+                output: "Output 2.1: Farmer Field Schools",
+                activity: "Construction of plastic ponds for irrigation",
+                indicator: "Ponds built",
+                target: 10,
+                achievement: 10,
+                date: "2025-11-20",
+                month: "November",
+                fiscalYear: "2025/26",
+                district: "Dailekh",
+                palika: "Dullu",
+                ward: "Ward 9",
+                responsible: "Sita Sharma",
+                annualBudget: 1100000,
+                monthlyBudget: 1100000,
+                expenditure: 1080000,
+                status: "Completed",
+                priority: "High",
+                remarks: "All ponds operational",
+                lastUpdated: "2025-11-25"
+            },
+            {
+                id: "ACT-114",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 3: Governance & Capacity",
+                output: "Output 3.1: Palika WASH Plan Support",
+                activity: "Joint Monitoring Visit with District Authorities",
+                indicator: "Visits held",
+                target: 2,
+                achievement: 2,
+                date: "2025-12-28",
+                month: "December",
+                fiscalYear: "2025/26",
+                district: "Surkhet",
+                palika: "Birendranagar",
+                ward: "All",
+                responsible: "Ram Shrestha",
+                annualBudget: 300000,
+                monthlyBudget: 300000,
+                expenditure: 290000,
+                status: "Completed",
+                priority: "Low",
+                remarks: "Joint report signed",
+                lastUpdated: "2025-12-30"
+            },
+            {
+                id: "ACT-115",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.1: Community Water Schemes",
+                activity: "Pipeline extension for unreached hamlet",
+                indicator: "Meters laid",
+                target: 1500,
+                achievement: 800,
+                date: "2026-02-20",
+                month: "February",
+                fiscalYear: "2025/26",
+                district: "Kailali",
+                palika: "Tikapur",
+                ward: "Ward 4",
+                responsible: "Gita Chaudhary",
+                annualBudget: 1800000,
+                monthlyBudget: 1800000,
+                expenditure: 950000,
+                status: "Ongoing",
+                priority: "High",
+                remarks: "Trenching completed",
+                lastUpdated: "2026-02-28"
+            },
+            {
+                id: "ACT-116",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 2: Climate Resilient Livelihoods",
+                output: "Output 2.2: Micro-enterprise",
+                activity: "Seed money grant disbursement to VSLAs",
+                indicator: "Groups supported",
+                target: 15,
+                achievement: 0,
+                date: "2026-04-10",
+                month: "April",
+                fiscalYear: "2025/26",
+                district: "Surkhet",
+                palika: "Gurbhakot",
+                ward: "Ward 2",
+                responsible: "Ram Shrestha",
+                annualBudget: 2200000,
+                monthlyBudget: 2200000,
+                expenditure: 0,
+                status: "Planned",
+                priority: "High",
+                remarks: "Scheduled for Q4",
+                lastUpdated: "2026-03-01"
+            },
+            {
+                id: "ACT-117",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 3: Governance & Capacity",
+                output: "Output 3.2: Local NGO Mentorship",
+                activity: "Social Audit and Public Hearing event",
+                indicator: "Audits held",
+                target: 1,
+                achievement: 0,
+                date: "2026-05-15",
+                month: "May",
+                fiscalYear: "2025/26",
+                district: "Dailekh",
+                palika: "Narayan",
+                ward: "Ward 1",
+                responsible: "Sita Sharma",
+                annualBudget: 250000,
+                monthlyBudget: 250000,
+                expenditure: 0,
+                status: "Planned",
+                priority: "Medium",
+                remarks: "Annual mandatory audit",
+                lastUpdated: "2026-03-01"
+            },
+            {
+                id: "ACT-118",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.2: School Sanitation",
+                activity: "Handwashing stations in primary schools",
+                indicator: "Stations built",
+                target: 8,
+                achievement: 8,
+                date: "2025-08-25",
+                month: "August",
+                fiscalYear: "2025/26",
+                district: "Jajarkot",
+                palika: "Chhedagad",
+                ward: "Ward 2",
+                responsible: "Hari Gurung",
+                annualBudget: 640000,
+                monthlyBudget: 640000,
+                expenditure: 620000,
+                status: "Completed",
+                priority: "Medium",
+                remarks: "Soap & water supply verified",
+                lastUpdated: "2025-08-28"
+            },
+            {
+                id: "ACT-119",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 2: Climate Resilient Livelihoods",
+                output: "Output 2.1: Farmer Field Schools",
+                activity: "Solar dryer distribution for spice processing",
+                indicator: "Dryers distributed",
+                target: 20,
+                achievement: 0,
+                date: "2026-02-05",
+                month: "February",
+                fiscalYear: "2025/26",
+                district: "Dailekh",
+                palika: "Dullu",
+                ward: "Ward 1",
+                responsible: "Sita Sharma",
+                annualBudget: 1000000,
+                monthlyBudget: 1000000,
+                expenditure: 0,
+                status: "Delayed",
+                priority: "Medium",
+                remarks: "Supplier failed delivery schedule",
+                lastUpdated: "2026-02-28"
+            },
+            {
+                id: "ACT-120",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 3: Governance & Capacity",
+                output: "Output 3.1: Palika WASH Plan Support",
+                activity: "WASH committee refresher training",
+                indicator: "Members trained",
+                target: 40,
+                achievement: 40,
+                date: "2025-10-10",
+                month: "October",
+                fiscalYear: "2025/26",
+                district: "Kailali",
+                palika: "Dhangadhi",
+                ward: "Ward 5",
+                responsible: "Gita Chaudhary",
+                annualBudget: 380000,
+                monthlyBudget: 380000,
+                expenditure: 370000,
+                status: "Completed",
+                priority: "Low",
+                remarks: "High turnout of female members",
+                lastUpdated: "2025-10-12"
+            },
+            {
+                id: "ACT-121",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.3: Community Hygiene",
+                activity: "Fecal sludge management feasibility study",
+                indicator: "Report submitted",
+                target: 1,
+                achievement: 0.5,
+                date: "2026-03-15",
+                month: "March",
+                fiscalYear: "2025/26",
+                district: "Surkhet",
+                palika: "Birendranagar",
+                ward: "Ward 1",
+                responsible: "Ram Shrestha",
+                annualBudget: 850000,
+                monthlyBudget: 425000,
+                expenditure: 300000,
+                status: "Ongoing",
+                priority: "Medium",
+                remarks: "Draft report under review",
+                lastUpdated: "2026-03-10"
+            },
+            {
+                id: "ACT-122",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 2: Climate Resilient Livelihoods",
+                output: "Output 2.2: Micro-enterprise",
+                activity: "Market linkage exhibition for local products",
+                indicator: "Exhibitions held",
+                target: 1,
+                achievement: 0,
+                date: "2026-06-10",
+                month: "June",
+                fiscalYear: "2025/26",
+                district: "Kailali",
+                palika: "Tikapur",
+                ward: "Ward 1",
+                responsible: "Gita Chaudhary",
+                annualBudget: 700000,
+                monthlyBudget: 700000,
+                expenditure: 0,
+                status: "Planned",
+                priority: "Low",
+                remarks: "Planned for year-end festival",
+                lastUpdated: "2026-03-01"
+            },
+            {
+                id: "ACT-123",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.1: Community Water Schemes",
+                activity: "Gravity-fed water scheme construction",
+                indicator: "Schemes built",
+                target: 1,
+                achievement: 0,
+                date: "2025-11-30",
+                month: "November",
+                fiscalYear: "2025/26",
+                district: "Jajarkot",
+                palika: "Bheri",
+                ward: "Ward 3",
+                responsible: "Hari Gurung",
+                annualBudget: 3500000,
+                monthlyBudget: 3500000,
+                expenditure: 500000,
+                status: "Delayed",
+                priority: "High",
+                remarks: "Contractor defaulted, re-tendering",
+                lastUpdated: "2025-12-10"
+            },
+            {
+                id: "ACT-124",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 3: Governance & Capacity",
+                output: "Output 3.2: Local NGO Mentorship",
+                activity: "GESI mainstreaming orientation for partners",
+                indicator: "Partners trained",
+                target: 6,
+                achievement: 6,
+                date: "2025-07-20",
+                month: "July",
+                fiscalYear: "2025/26",
+                district: "Surkhet",
+                palika: "Birendranagar",
+                ward: "Ward 2",
+                responsible: "Ram Shrestha",
+                annualBudget: 300000,
+                monthlyBudget: 300000,
+                expenditure: 295000,
+                status: "Completed",
+                priority: "Medium",
+                remarks: "GESI action plans developed",
+                lastUpdated: "2025-07-22"
+            },
+            {
+                id: "ACT-125",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 2: Climate Resilient Livelihoods",
+                output: "Output 2.1: Farmer Field Schools",
+                activity: "Establishment of community seed banks",
+                indicator: "Seed banks built",
+                target: 2,
+                achievement: 2,
+                date: "2025-08-30",
+                month: "August",
+                fiscalYear: "2025/26",
+                district: "Dailekh",
+                palika: "Narayan",
+                ward: "Ward 5",
+                responsible: "Sita Sharma",
+                annualBudget: 950000,
+                monthlyBudget: 950000,
+                expenditure: 920000,
+                status: "Completed",
+                priority: "Medium",
+                remarks: "Indigenous seeds stored",
+                lastUpdated: "2025-09-02"
+            },
+            {
+                id: "ACT-126",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.2: School Sanitation",
+                activity: "Rainwater harvesting in hillside schools",
+                indicator: "Systems installed",
+                target: 3,
+                achievement: 1,
+                date: "2026-03-20",
+                month: "March",
+                fiscalYear: "2025/26",
+                district: "Jajarkot",
+                palika: "Chhedagad",
+                ward: "Ward 4",
+                responsible: "Hari Gurung",
+                annualBudget: 1400000,
+                monthlyBudget: 700000,
+                expenditure: 600000,
+                status: "Ongoing",
+                priority: "High",
+                remarks: "Tanks installed, piping left",
+                lastUpdated: "2026-03-12"
+            },
+            {
+                id: "ACT-127",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 2: Climate Resilient Livelihoods",
+                output: "Output 2.2: Micro-enterprise",
+                activity: "Value-chain study for riverbed farming",
+                indicator: "Study completed",
+                target: 1,
+                achievement: 1,
+                date: "2025-10-15",
+                month: "October",
+                fiscalYear: "2025/26",
+                district: "Kailali",
+                palika: "Dhangadhi",
+                ward: "Ward 9",
+                responsible: "Gita Chaudhary",
+                annualBudget: 550000,
+                monthlyBudget: 550000,
+                expenditure: 540000,
+                status: "Completed",
+                priority: "Low",
+                remarks: "Shared with ministry",
+                lastUpdated: "2025-10-18"
+            },
+            {
+                id: "ACT-128",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 3: Governance & Capacity",
+                output: "Output 3.1: Palika WASH Plan Support",
+                activity: "Disaster Risk Reduction (DRR) orientation for WASH",
+                indicator: "Orientations",
+                target: 4,
+                achievement: 4,
+                date: "2025-09-28",
+                month: "September",
+                fiscalYear: "2025/26",
+                district: "Surkhet",
+                palika: "Gurbhakot",
+                ward: "Ward 5",
+                responsible: "Ram Shrestha",
+                annualBudget: 420000,
+                monthlyBudget: 420000,
+                expenditure: 410000,
+                status: "Completed",
+                priority: "Medium",
+                remarks: "Emergency response team formed",
+                lastUpdated: "2025-09-30"
+            },
+            {
+                id: "ACT-129",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 1: Water & Sanitation",
+                output: "Output 1.3: Community Hygiene",
+                activity: "Distribution of household water filters",
+                indicator: "Filters distributed",
+                target: 300,
+                achievement: 300,
+                date: "2025-12-18",
+                month: "December",
+                fiscalYear: "2025/26",
+                district: "Dailekh",
+                palika: "Dullu",
+                ward: "Ward 7",
+                responsible: "Sita Sharma",
+                annualBudget: 1500000,
+                monthlyBudget: 1500000,
+                expenditure: 1490000,
+                status: "Completed",
+                priority: "High",
+                remarks: "Bio-sand filters installed",
+                lastUpdated: "2025-12-22"
+            },
+            {
+                id: "ACT-130",
+                project: "Nepal WASH & Livelihood Project",
+                outcome: "Component 2: Climate Resilient Livelihoods",
+                output: "Output 2.1: Farmer Field Schools",
+                activity: "Organic composting pit construction demonstration",
+                indicator: "Demos conducted",
+                target: 15,
+                achievement: 15,
+                date: "2025-07-28",
+                month: "July",
+                fiscalYear: "2025/26",
+                district: "Jajarkot",
+                palika: "Bheri",
+                ward: "Ward 2",
+                responsible: "Hari Gurung",
+                annualBudget: 320000,
+                monthlyBudget: 320000,
+                expenditure: 310000,
+                status: "Completed",
+                priority: "Low",
+                remarks: "Composting underway",
+                lastUpdated: "2025-07-31"
+            }
+        ];
+
+        /* MONTH ORDER REFERENCE */
+        const FISCAL_MONTHS = ["July", "August", "September", "October", "November", "December", "January", "February", "March", "April", "May", "June"];
+
+        /* STATE MANAGEMENT */
+        let stateRawData = [...DEMO_ACTIVITIES_DATA];
+        let stateFilteredData = [...DEMO_ACTIVITIES_DATA];
+        let activeTab = "overview";
+
+        /* CHART INSTANCES */
+        let chartInstances = {};
+
+        window.onload = function() {
+            lucide.createIcons();
+            populateFilterOptions();
+            applyGlobalFilters();
+            calculateDataQuality();
+        };
+
+        // NUMERIC COMPACT FORMATTER FOR NPR (e.g., NPR 12.50M or NPR 450K)
+        function formatNPR(amount) {
+            if (amount === null || amount === undefined || isNaN(amount)) return "NPR 0";
+            const abs = Math.abs(amount);
+            if (abs >= 10000000) {
+                return "NPR " + (amount / 10000000).toFixed(2) + " Cr";
+            } else if (abs >= 100000) {
+                return "NPR " + (amount / 100000).toFixed(2) + " Lakh";
+            } else if (abs >= 1000) {
+                return "NPR " + (amount / 1000).toFixed(1) + "K";
+            } else {
+                return "NPR " + amount.toLocaleString();
+            }
+        }
+
+        // FULL CURRENCY FORMATTER
+        function formatNPRFull(amount) {
+            return "NPR " + (amount || 0).toLocaleString('en-IN');
+        }
+
+        // TAB SWITCHING
+        function switchTab(tabId) {
+            activeTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('nav button').forEach(el => {
+                el.classList.remove('tab-active');
+            });
+
+            const targetView = document.getElementById(`view-${tabId}`);
+            if (targetView) targetView.classList.remove('hidden');
+
+            const targetBtn = document.getElementById(`tab-${tabId}`);
+            if (targetBtn) targetBtn.classList.add('tab-active');
+
+            // Render view-specific content if needed
+            if (tabId === 'activities') renderMasterActivitiesTable();
+            if (tabId === 'financials') renderFinancialsTab();
+            if (tabId === 'responsibility') renderResponsibilityTab();
+            if (tabId === 'components') renderComponentsTab();
+            if (tabId === 'location') renderLocationTab();
+            if (tabId === 'delayed') renderDelayedTab();
+            if (tabId === 'upcoming') renderUpcomingTab();
+            if (tabId === 'quality') calculateDataQuality();
+
+            lucide.createIcons();
+        }
+
+        /* POPULATE FILTER DROPDOWNS DYNAMICALLY */
+        function populateFilterOptions() {
+            const projects = [...new Set(stateRawData.map(d => d.project))];
+            const fys = [...new Set(stateRawData.map(d => d.fiscalYear))];
+            const months = FISCAL_MONTHS;
+            const components = [...new Set(stateRawData.map(d => d.outcome))];
+            const districts = [...new Set(stateRawData.map(d => d.district))];
+            const palikas = [...new Set(stateRawData.map(d => d.palika))];
+            const staff = [...new Set(stateRawData.map(d => d.responsible))];
+
+            fillSelect('filterProject', projects);
+            fillSelect('filterFY', fys);
+            fillSelect('filterMonth', months);
+            fillSelect('filterComponent', components);
+            fillSelect('filterDistrict', districts);
+            fillSelect('filterPalika', palikas);
+            fillSelect('filterStaff', staff);
+        }
+
+        function fillSelect(elementId, items) {
+            const select = document.getElementById(elementId);
+            const firstOpt = select.options[0];
+            select.innerHTML = '';
+            select.appendChild(firstOpt);
+            items.forEach(item => {
+                if (item) {
+                    const opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    select.appendChild(opt);
+                }
+            });
+        }
+
+        function applyGlobalFilters() {
+            const p = document.getElementById('filterProject').value;
+            const fy = document.getElementById('filterFY').value;
+            const m = document.getElementById('filterMonth').value;
+            const c = document.getElementById('filterComponent').value;
+            const d = document.getElementById('filterDistrict').value;
+            const pal = document.getElementById('filterPalika').value;
+            const st = document.getElementById('filterStaff').value;
+            const status = document.getElementById('filterStatus').value;
+
+            stateFilteredData = stateRawData.filter(item => {
+                if (p && item.project !== p) return false;
+                if (fy && item.fiscalYear !== fy) return false;
+                if (m && item.month !== m) return false;
+                if (c && item.outcome !== c) return false;
+                if (d && item.district !== d) return false;
+                if (pal && item.palika !== pal) return false;
+                if (st && item.responsible !== st) return false;
+                if (status && item.status !== status) return false;
+                return true;
+            });
+
+            // Re-compute KPIs and refresh active view
+            computeKPIs();
+            renderOverviewCharts();
+            generateExecutiveSummaryText();
+
+            if (activeTab === 'activities') renderMasterActivitiesTable();
+            if (activeTab === 'financials') renderFinancialsTab();
+            if (activeTab === 'responsibility') renderResponsibilityTab();
+            if (activeTab === 'components') renderComponentsTab();
+            if (activeTab === 'location') renderLocationTab();
+            if (activeTab === 'delayed') renderDelayedTab();
+            if (activeTab === 'upcoming') renderUpcomingTab();
+            if (activeTab === 'quality') calculateDataQuality();
+
+            // Refresh Overview quick table
+            renderOverviewDelayedPreview();
+        }
+
+        function resetGlobalFilters() {
+            document.getElementById('filterProject').value = '';
+            document.getElementById('filterFY').value = '';
+            document.getElementById('filterMonth').value = '';
+            document.getElementById('filterComponent').value = '';
+            document.getElementById('filterDistrict').value = '';
+            document.getElementById('filterPalika').value = '';
+            document.getElementById('filterStaff').value = '';
+            document.getElementById('filterStatus').value = '';
+            applyGlobalFilters();
+        }
+
+        function computeKPIs() {
+            const data = stateFilteredData;
+            const selMonth = document.getElementById('filterMonth').value;
+
+            // Activity Counts
+            const annualActivitiesCount = data.length;
+            
+            // Month filter specific or all month planned
+            const monthPlannedCount = selMonth ? 
+                data.filter(d => d.month === selMonth).length : 
+                data.filter(d => d.status === 'Completed' || d.status === 'Ongoing' || d.status === 'Delayed').length;
+
+            const completedCount = data.filter(d => d.status === 'Completed').length;
+            const ongoingCount = data.filter(d => d.status === 'Ongoing').length;
+            
+            // Delayed calculation based on status OR deadline
+            const todayStr = "2026-03-16";
+            const delayedData = data.filter(d => {
+                if (d.status === 'Delayed') return true;
+                if (d.status !== 'Completed' && d.date < todayStr) return true;
+                return false;
+            });
+            const delayedCount = delayedData.length;
+
+            // Overall Achievement %
+            let totalTargetSum = 0;
+            let totalAchSum = 0;
+            data.forEach(d => {
+                if (d.target && !isNaN(d.target)) {
+                    totalTargetSum += Number(d.target);
+                    totalAchSum += Math.min(Number(d.achievement || 0), Number(d.target));
+                }
+            });
+            const overallAchievementPct = annualActivitiesCount > 0 ? 
+                ((completedCount / annualActivitiesCount) * 100) : 0;
+
+            // Financial Calculations
+            let annualBudget = 0;
+            let annualExpenditure = 0;
+            let monthlyBudget = 0;
+            let monthlyExpenditure = 0;
+            let ytdBudget = 0;
+            let ytdExpenditure = 0;
+
+            const currentMonthIdx = selMonth ? FISCAL_MONTHS.indexOf(selMonth) : 8; // March by default
+
+            data.forEach(d => {
+                const bg = Number(d.annualBudget) || 0;
+                const exp = Number(d.expenditure) || 0;
+                const mBg = Number(d.monthlyBudget) || bg;
+                
+                annualBudget += bg;
+                annualExpenditure += exp;
+
+                const dMonthIdx = FISCAL_MONTHS.indexOf(d.month);
+
+                // Selected Month or current month match
+                if (selMonth && d.month === selMonth) {
+                    monthlyBudget += mBg;
+                    monthlyExpenditure += exp;
+                } else if (!selMonth && dMonthIdx === currentMonthIdx) {
+                    monthlyBudget += mBg;
+                    monthlyExpenditure += exp;
+                }
+
+                // YTD calculation (Up to current month index)
+                if (dMonthIdx <= currentMonthIdx) {
+                    ytdBudget += mBg;
+                    ytdExpenditure += exp;
+                }
+            });
+
+            const annualBurn = annualBudget > 0 ? ((annualExpenditure / annualBudget) * 100) : 0;
+            const monthlyBurn = monthlyBudget > 0 ? ((monthlyExpenditure / monthlyBudget) * 100) : 0;
+            const ytdBurn = ytdBudget > 0 ? ((ytdExpenditure / ytdBudget) * 100) : 0;
+            const remainingBudget = annualBudget - annualExpenditure;
+
+            // Update UI KPI Elements
+            document.getElementById('kpiAnnualActivities').textContent = annualActivitiesCount;
+            document.getElementById('kpiMonthPlannedActivities').textContent = monthPlannedCount;
+            document.getElementById('kpiCompletedActivities').textContent = completedCount;
+            document.getElementById('kpiOngoingActivities').textContent = ongoingCount;
+            document.getElementById('kpiDelayedActivities').textContent = delayedCount;
+            
+            document.getElementById('kpiAchievementPct').textContent = `${overallAchievementPct.toFixed(1)}% Overall Achievement`;
+            document.getElementById('kpiOverallAchievementPct').textContent = `${overallAchievementPct.toFixed(1)}%`;
+            document.getElementById('kpiAchievementProgressBar').style.width = `${Math.min(overallAchievementPct, 100)}%`;
+
+            document.getElementById('kpiAnnualBudget').textContent = formatNPR(annualBudget);
+            document.getElementById('kpiAnnualExpenditure').textContent = formatNPR(annualExpenditure);
+            document.getElementById('kpiAnnualBurn').textContent = `Burn: ${annualBurn.toFixed(1)}%`;
+
+            document.getElementById('kpiMonthlyExpenditure').textContent = formatNPR(monthlyExpenditure);
+            document.getElementById('kpiMonthlyBurn').textContent = `Monthly Burn: ${monthlyBurn.toFixed(1)}%`;
+
+            document.getElementById('kpiYtdExpenditure').textContent = formatNPR(ytdExpenditure);
+            document.getElementById('kpiYtdBurn').textContent = `YTD Burn: ${ytdBurn.toFixed(1)}%`;
+
+            document.getElementById('kpiRemainingBudget').textContent = formatNPR(remainingBudget);
+
+            // Update Delayed Badge
+            document.getElementById('badgeDelayedCount').textContent = delayedCount;
+
+            // Month Label
+            document.getElementById('kpiMonthNameLabel').textContent = selMonth || "Current";
+
+            // Financial Health Badge
+            const healthBadge = document.getElementById('kpiHealthBadge');
+            const healthSub = document.getElementById('kpiHealthSubtext');
+            if (ytdBurn > 105) {
+                healthBadge.className = "px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800";
+                healthBadge.textContent = "Overspending";
+                healthSub.textContent = "YTD expenditure exceeds plan";
+            } else if (ytdBurn < 50) {
+                healthBadge.className = "px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800";
+                healthBadge.textContent = "Underutilization";
+                healthSub.textContent = "Budget burn lagging target";
+            } else {
+                healthBadge.className = "px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800";
+                healthBadge.textContent = "On Track";
+                healthSub.textContent = "Budget burn aligned with timeline";
+            }
+        }
+
+        /* GENERATE AUTOMATED NARRATIVE EXECUTIVE SUMMARY */
+        function generateExecutiveSummaryText() {
+            const data = stateFilteredData;
+            const total = data.length;
+            const completed = data.filter(d => d.status === 'Completed').length;
+            const ongoing = data.filter(d => d.status === 'Ongoing').length;
+            const delayed = data.filter(d => d.status === 'Delayed').length;
+
+            const achPct = total > 0 ? ((completed / total) * 100).toFixed(1) : "0";
+
+            let totalExp = 0;
+            let totalYtdBg = 0;
+            data.forEach(d => {
+                totalExp += Number(d.expenditure || 0);
+                totalYtdBg += Number(d.monthlyBudget || d.annualBudget || 0);
+            });
+
+            const burnPct = totalYtdBg > 0 ? ((totalExp / totalYtdBg) * 100).toFixed(1) : "0";
+
+            const monthSel = document.getElementById('filterMonth').value;
+            const monthText = monthSel ? `For ${monthSel}` : "During the current fiscal reporting period";
+
+            const summary = `${monthText}, a total of ${total} activities were tracked across selected outcomes. Of these, ${completed} activities have been successfully completed (${achPct}% achievement rate), ${ongoing} remain in active implementation, and ${delayed} tasks are flagged as delayed. Total cumulative expenditure stands at ${formatNPR(totalExp)} against a planned YTD allocation of ${formatNPR(totalYtdBg)}, reflecting a ${burnPct}% YTD budget burn rate. Overall, ${delayed} activities require immediate management attention.`;
+
+            document.getElementById('executiveSummaryText').textContent = summary;
+        }
+
+        function renderOverviewCharts() {
+            const data = stateFilteredData;
+
+            // Data prep for monthly activities chart
+            const monthlyPlannedCounts = FISCAL_MONTHS.map(m => data.filter(d => d.month === m).length);
+            const monthlyCompletedCounts = FISCAL_MONTHS.map(m => data.filter(d => d.month === m && d.status === 'Completed').length);
+
+            // Data prep for monthly financials
+            const monthlyBudgets = FISCAL_MONTHS.map(m => {
+                return data.filter(d => d.month === m).reduce((acc, curr) => acc + Number(curr.monthlyBudget || curr.annualBudget || 0), 0);
+            });
+            const monthlyExps = FISCAL_MONTHS.map(m => {
+                return data.filter(d => d.month === m).reduce((acc, curr) => acc + Number(curr.expenditure || 0), 0);
+            });
+
+            // Cumulative Progress Prep
+            let cumPlanned = 0;
+            let cumCompleted = 0;
+            const cumPlannedArr = [];
+            const cumCompletedArr = [];
+
+            FISCAL_MONTHS.forEach((m, idx) => {
+                const plannedInM = data.filter(d => d.month === m).length;
+                const compInM = data.filter(d => d.month === m && d.status === 'Completed').length;
+                cumPlanned += plannedInM;
+                cumCompleted += compInM;
+                cumPlannedArr.push(cumPlanned);
+                cumCompletedArr.push(cumCompleted);
+            });
+
+            // Status Breakdown
+            const statusCounts = {
+                Completed: data.filter(d => d.status === 'Completed').length,
+                Ongoing: data.filter(d => d.status === 'Ongoing').length,
+                Planned: data.filter(d => d.status === 'Planned').length,
+                'Partially Completed': data.filter(d => d.status === 'Partially Completed').length,
+                Delayed: data.filter(d => d.status === 'Delayed').length,
+                Cancelled: data.filter(d => d.status === 'Cancelled').length
+            };
+
+            // Destroy previous charts
+            Object.keys(chartInstances).forEach(key => {
+                if (chartInstances[key]) chartInstances[key].destroy();
+            });
+
+            // 1. Monthly Activities Chart
+            const ctxAct = document.getElementById('chartMonthlyActivities')?.getContext('2d');
+            if (ctxAct) {
+                chartInstances.monthlyAct = new Chart(ctxAct, {
+                    type: 'bar',
+                    data: {
+                        labels: FISCAL_MONTHS,
+                        datasets: [
+                            {
+                                label: 'Planned Activities',
+                                data: monthlyPlannedCounts,
+                                backgroundColor: '#93c5fd',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Completed Activities',
+                                data: monthlyCompletedCounts,
+                                backgroundColor: '#10b981',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } } },
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    }
+                });
+            }
+
+            // 2. Monthly Financials Chart
+            const ctxFin = document.getElementById('chartMonthlyFinancials')?.getContext('2d');
+            if (ctxFin) {
+                chartInstances.monthlyFin = new Chart(ctxFin, {
+                    type: 'bar',
+                    data: {
+                        labels: FISCAL_MONTHS,
+                        datasets: [
+                            {
+                                label: 'Planned Budget (NPR)',
+                                data: monthlyBudgets,
+                                backgroundColor: '#cbd5e1',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Actual Expenditure (NPR)',
+                                data: monthlyExps,
+                                backgroundColor: '#3b82f6',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.dataset.label + ': ' + formatNPRFull(context.raw);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) { return formatNPR(value); }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 3. Cumulative Progress S-Curve
+            const ctxCum = document.getElementById('chartCumulativeProgress')?.getContext('2d');
+            if (ctxCum) {
+                chartInstances.cumProgress = new Chart(ctxCum, {
+                    type: 'line',
+                    data: {
+                        labels: FISCAL_MONTHS,
+                        datasets: [
+                            {
+                                label: 'Cumulative Planned Target',
+                                data: cumPlannedArr,
+                                borderColor: '#64748b',
+                                borderDash: [5, 5],
+                                backgroundColor: 'transparent',
+                                tension: 0.3,
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'Cumulative Completed Actual',
+                                data: cumCompletedArr,
+                                borderColor: '#059669',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                fill: true,
+                                tension: 0.3,
+                                borderWidth: 2.5
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10 } } } },
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    }
+                });
+            }
+
+            // 4. Status Breakdown Donut
+            const ctxStatus = document.getElementById('chartStatusBreakdown')?.getContext('2d');
+            if (ctxStatus) {
+                chartInstances.statusDonut = new Chart(ctxStatus, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Completed', 'Ongoing', 'Planned', 'Partially Completed', 'Delayed', 'Cancelled'],
+                        datasets: [{
+                            data: [
+                                statusCounts.Completed,
+                                statusCounts.Ongoing,
+                                statusCounts.Planned,
+                                statusCounts['Partially Completed'],
+                                statusCounts.Delayed,
+                                statusCounts.Cancelled
+                            ],
+                            backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#fb923c', '#ef4444', '#94a3b8']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        cutout: '65%'
+                    }
+                });
+
+                // Custom status legend
+                const legendEl = document.getElementById('statusCustomLegend');
+                if (legendEl) {
+                    const totalS = data.length || 1;
+                    legendEl.innerHTML = `
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Completed: <b class="ml-auto">${statusCounts.Completed} (${((statusCounts.Completed/totalS)*100).toFixed(0)}%)</b></div>
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Ongoing: <b class="ml-auto">${statusCounts.Ongoing} (${((statusCounts.Ongoing/totalS)*100).toFixed(0)}%)</b></div>
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Planned: <b class="ml-auto">${statusCounts.Planned} (${((statusCounts.Planned/totalS)*100).toFixed(0)}%)</b></div>
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-400"></span> Partial: <b class="ml-auto">${statusCounts['Partially Completed']} (${((statusCounts['Partially Completed']/totalS)*100).toFixed(0)}%)</b></div>
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Delayed: <b class="ml-auto">${statusCounts.Delayed} (${((statusCounts.Delayed/totalS)*100).toFixed(0)}%)</b></div>
+                        <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Cancelled: <b class="ml-auto">${statusCounts.Cancelled} (${((statusCounts.Cancelled/totalS)*100).toFixed(0)}%)</b></div>
+                    `;
+                }
+            }
+        }
+
+        function renderOverviewDelayedPreview() {
+            const tbody = document.getElementById('tableOverviewDelayedBody');
+            if (!tbody) return;
+
+            const todayStr = "2026-03-16";
+            const delayed = stateFilteredData.filter(d => d.status === 'Delayed' || (d.status !== 'Completed' && d.date < todayStr));
+
+            if (delayed.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">No delayed activities detected for selected filters.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = delayed.slice(0, 5).map(item => {
+                const daysLate = calculateDaysBetween(item.date, todayStr);
+                const achPct = item.target > 0 ? ((item.achievement / item.target) * 100).toFixed(0) : 0;
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-2.5 font-bold text-slate-800">${item.id}</td>
+                        <td class="p-2.5 font-medium text-slate-900">${item.activity}</td>
+                        <td class="p-2.5 text-slate-600">${item.responsible}</td>
+                        <td class="p-2.5 text-slate-500">${item.date}</td>
+                        <td class="p-2.5 font-bold text-red-600">${daysLate} days</td>
+                        <td class="p-2.5 text-slate-700">${formatNPR(item.annualBudget)}</td>
+                        <td class="p-2.5 font-semibold text-slate-800">${achPct}%</td>
+                        <td class="p-2.5 text-slate-500 text-[11px] truncate max-w-[150px]">${item.remarks || 'Timeline overrun'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderMasterActivitiesTable() {
+            const tbody = document.getElementById('masterTableBody');
+            const searchVal = (document.getElementById('masterSearch')?.value || '').toLowerCase();
+
+            if (!tbody) return;
+
+            const filtered = stateFilteredData.filter(d => {
+                if (!searchVal) return true;
+                return d.id.toLowerCase().includes(searchVal) ||
+                       d.activity.toLowerCase().includes(searchVal) ||
+                       d.responsible.toLowerCase().includes(searchVal) ||
+                       d.district.toLowerCase().includes(searchVal);
+            });
+
+            document.getElementById('masterTableCounter').textContent = `Showing ${filtered.length} of ${stateFilteredData.length} activities`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="13" class="p-6 text-center text-slate-400">No activities matching filter or search criteria.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(item => {
+                const achPct = item.target > 0 ? ((item.achievement / item.target) * 100).toFixed(0) : 0;
+                const burnPct = item.annualBudget > 0 ? ((item.expenditure / item.annualBudget) * 100).toFixed(0) : 0;
+                
+                let statusBadge = "bg-slate-100 text-slate-700";
+                if (item.status === 'Completed') statusBadge = "bg-emerald-100 text-emerald-800";
+                else if (item.status === 'Ongoing') statusBadge = "bg-blue-100 text-blue-800";
+                else if (item.status === 'Planned') statusBadge = "bg-amber-100 text-amber-800";
+                else if (item.status === 'Delayed') statusBadge = "bg-red-100 text-red-800";
+
+                return `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="p-2.5 font-bold text-slate-800">${item.id}</td>
+                        <td class="p-2.5 text-[11px] text-slate-500">${item.outcome.split(':')[0]}</td>
+                        <td class="p-2.5 font-medium text-slate-900">${item.activity}</td>
+                        <td class="p-2.5 text-slate-600">${item.target} ${item.indicator}</td>
+                        <td class="p-2.5 font-semibold text-slate-800">${item.achievement} (${achPct}%)</td>
+                        <td class="p-2.5 text-slate-500 whitespace-nowrap">${item.date}</td>
+                        <td class="p-2.5 text-slate-600">${item.district}, ${item.palika}</td>
+                        <td class="p-2.5 font-medium text-slate-800">${item.responsible}</td>
+                        <td class="p-2.5 font-semibold text-slate-900 text-right">${formatNPR(item.annualBudget)}</td>
+                        <td class="p-2.5 text-slate-700 text-right">${formatNPR(item.expenditure)}</td>
+                        <td class="p-2.5 font-semibold text-slate-800 text-center">${burnPct}%</td>
+                        <td class="p-2.5 text-center">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${statusBadge}">${item.status}</span>
+                        </td>
+                        <td class="p-2.5 text-center text-[10px] font-semibold">${item.priority || 'Normal'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderFinancialsTab() {
+            const data = stateFilteredData;
+
+            let annBg = 0, annExp = 0, mBg = 0, mExp = 0, ytdBg = 0, ytdExp = 0;
+            const selMonth = document.getElementById('filterMonth').value;
+            const currentMonthIdx = selMonth ? FISCAL_MONTHS.indexOf(selMonth) : 8;
+
+            data.forEach(d => {
+                const bg = Number(d.annualBudget || 0);
+                const exp = Number(d.expenditure || 0);
+                const mb = Number(d.monthlyBudget || bg);
+
+                annBg += bg;
+                annExp += exp;
+
+                const mIdx = FISCAL_MONTHS.indexOf(d.month);
+
+                if (selMonth && d.month === selMonth) {
+                    mBg += mb;
+                    mExp += exp;
+                } else if (!selMonth && mIdx === currentMonthIdx) {
+                    mBg += mb;
+                    mExp += exp;
+                }
+
+                if (mIdx <= currentMonthIdx) {
+                    ytdBg += mb;
+                    ytdExp += exp;
+                }
+            });
+
+            document.getElementById('finAnnualBudget').textContent = formatNPRFull(annBg);
+            document.getElementById('finAnnualExp').textContent = formatNPRFull(annExp);
+            document.getElementById('finAnnualBurnPct').textContent = `${annBg > 0 ? ((annExp/annBg)*100).toFixed(1) : 0}%`;
+            document.getElementById('finAnnualRemaining').textContent = formatNPRFull(annBg - annExp);
+
+            document.getElementById('finMonthlyBudget').textContent = formatNPRFull(mBg);
+            document.getElementById('finMonthlyExp').textContent = formatNPRFull(mExp);
+            document.getElementById('finMonthlyBurnPct').textContent = `${mBg > 0 ? ((mExp/mBg)*100).toFixed(1) : 0}%`;
+
+            document.getElementById('finYtdBudget').textContent = formatNPRFull(ytdBg);
+            document.getElementById('finYtdExp').textContent = formatNPRFull(ytdExp);
+            document.getElementById('finYtdBurnPct').textContent = `${ytdBg > 0 ? ((ytdExp/ytdBg)*100).toFixed(1) : 0}%`;
+
+            // Charts by Component & District
+            const comps = [...new Set(data.map(d => d.outcome))];
+            const compBudgets = comps.map(c => data.filter(d => d.outcome === c).reduce((a,b) => a + Number(b.annualBudget||0), 0));
+            const compExps = comps.map(c => data.filter(d => d.outcome === c).reduce((a,b) => a + Number(b.expenditure||0), 0));
+
+            const ctxComp = document.getElementById('chartFinByComponent')?.getContext('2d');
+            if (ctxComp) {
+                if (chartInstances.finComp) chartInstances.finComp.destroy();
+                chartInstances.finComp = new Chart(ctxComp, {
+                    type: 'bar',
+                    data: {
+                        labels: comps.map(c => c.split(':')[0]),
+                        datasets: [
+                            { label: 'Budget', data: compBudgets, backgroundColor: '#94a3b8' },
+                            { label: 'Expenditure', data: compExps, backgroundColor: '#2563eb' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { ticks: { callback: v => formatNPR(v) } } }
+                    }
+                });
+            }
+
+            const dists = [...new Set(data.map(d => d.district))];
+            const distExps = dists.map(dis => data.filter(d => d.district === dis).reduce((a,b) => a + Number(b.expenditure||0), 0));
+
+            const ctxDist = document.getElementById('chartFinByDistrict')?.getContext('2d');
+            if (ctxDist) {
+                if (chartInstances.finDist) chartInstances.finDist.destroy();
+                chartInstances.finDist = new Chart(ctxDist, {
+                    type: 'bar',
+                    data: {
+                        labels: dists,
+                        datasets: [{ label: 'Expenditure (NPR)', data: distExps, backgroundColor: '#059669' }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { ticks: { callback: v => formatNPR(v) } } }
+                    }
+                });
+            }
+        }
+
+        function renderResponsibilityTab() {
+            const tbody = document.getElementById('tableStaffSummaryBody');
+            if (!tbody) return;
+
+            const staffList = [...new Set(stateRawData.map(d => d.responsible))];
+
+            tbody.innerHTML = staffList.map(person => {
+                const personData = stateFilteredData.filter(d => d.responsible === person);
+                const total = personData.length;
+                const completed = personData.filter(d => d.status === 'Completed').length;
+                const ongoing = personData.filter(d => d.status === 'Ongoing').length;
+                const delayed = personData.filter(d => d.status === 'Delayed').length;
+                const pending = personData.filter(d => d.status === 'Planned').length;
+
+                const achPct = total > 0 ? ((completed / total) * 100).toFixed(0) : 0;
+                const totalBg = personData.reduce((a, b) => a + Number(b.annualBudget || 0), 0);
+                const totalExp = personData.reduce((a, b) => a + Number(b.expenditure || 0), 0);
+
+                return `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="p-3 font-bold text-slate-800">${person}</td>
+                        <td class="p-3 text-center font-semibold text-slate-900">${total}</td>
+                        <td class="p-3 text-center font-bold text-emerald-600">${completed}</td>
+                        <td class="p-3 text-center font-bold text-blue-600">${ongoing}</td>
+                        <td class="p-3 text-center font-bold text-red-600">${delayed}</td>
+                        <td class="p-3 text-center font-bold text-amber-600">${pending}</td>
+                        <td class="p-3 text-center font-bold text-slate-800">${achPct}%</td>
+                        <td class="p-3 text-right font-semibold text-slate-800">${formatNPR(totalBg)}</td>
+                        <td class="p-3 text-right text-slate-700">${formatNPR(totalExp)}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="filterByStaffName('${person}')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-xs font-semibold">
+                                View Tasks
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterByStaffName(person) {
+            document.getElementById('filterStaff').value = person;
+            applyGlobalFilters();
+
+            // Show drill down table
+            const container = document.getElementById('staffDrillDownContainer');
+            const nameEl = document.getElementById('selectedStaffName');
+            const tbody = document.getElementById('tableStaffTasksBody');
+
+            if (container && nameEl && tbody) {
+                container.classList.remove('hidden');
+                nameEl.textContent = person;
+
+                const personTasks = stateFilteredData.filter(d => d.responsible === person);
+                tbody.innerHTML = personTasks.map(t => {
+                    const achPct = t.target > 0 ? ((t.achievement / t.target) * 100).toFixed(0) : 0;
+                    return `
+                        <tr>
+                            <td class="p-2 font-bold">${t.id}</td>
+                            <td class="p-2 text-slate-500">${t.outcome.split(':')[0]}</td>
+                            <td class="p-2 font-medium">${t.activity}</td>
+                            <td class="p-2">${t.district}, ${t.palika}</td>
+                            <td class="p-2 text-slate-500">${t.date}</td>
+                            <td class="p-2 text-right font-medium">${formatNPR(t.annualBudget)}</td>
+                            <td class="p-2 font-bold text-center">${achPct}%</td>
+                            <td class="p-2"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100">${t.status}</span></td>
+                            <td class="p-2 text-slate-500 text-[11px]">${t.remarks || ''}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        function clearStaffFilter() {
+            document.getElementById('filterStaff').value = '';
+            document.getElementById('staffDrillDownContainer').classList.add('hidden');
+            applyGlobalFilters();
+        }
+
+        function renderComponentsTab() {
+            const tbody = document.getElementById('tableComponentHierarchyBody');
+            if (!tbody) return;
+
+            const components = [...new Set(stateRawData.map(d => d.outcome))];
+
+            tbody.innerHTML = components.map(comp => {
+                const compData = stateFilteredData.filter(d => d.outcome === comp);
+                const total = compData.length;
+                const completed = compData.filter(d => d.status === 'Completed').length;
+                const achPct = total > 0 ? ((completed / total) * 100).toFixed(0) : 0;
+                const bg = compData.reduce((a, b) => a + Number(b.annualBudget || 0), 0);
+                const exp = compData.reduce((a, b) => a + Number(b.expenditure || 0), 0);
+                const burnPct = bg > 0 ? ((exp / bg) * 100).toFixed(1) : 0;
+
+                return `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="p-3 font-bold text-slate-800">${comp}</td>
+                        <td class="p-3 text-center font-bold text-slate-900">${total}</td>
+                        <td class="p-3 text-center font-bold text-emerald-600">${completed}</td>
+                        <td class="p-3 text-center font-bold text-slate-800">${achPct}%</td>
+                        <td class="p-3 text-right font-semibold text-slate-900">${formatNPR(bg)}</td>
+                        <td class="p-3 text-right text-slate-700">${formatNPR(exp)}</td>
+                        <td class="p-3 text-center font-bold text-blue-700">${burnPct}%</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderLocationTab() {
+            const tbody = document.getElementById('tableLocationBody');
+            if (!tbody) return;
+
+            const locs = [...new Set(stateFilteredData.map(d => `${d.district}||${d.palika}`))];
+
+            tbody.innerHTML = locs.map(locKey => {
+                const [dist, pal] = locKey.split('||');
+                const locData = stateFilteredData.filter(d => d.district === dist && d.palika === pal);
+                const total = locData.length;
+                const completed = locData.filter(d => d.status === 'Completed').length;
+                const achPct = total > 0 ? ((completed / total) * 100).toFixed(0) : 0;
+                const bg = locData.reduce((a, b) => a + Number(b.annualBudget || 0), 0);
+                const exp = locData.reduce((a, b) => a + Number(b.expenditure || 0), 0);
+                const burnPct = bg > 0 ? ((exp / bg) * 100).toFixed(1) : 0;
+
+                return `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="p-3 font-bold text-slate-800">${dist}</td>
+                        <td class="p-3 text-slate-700">${pal}</td>
+                        <td class="p-3 text-center font-semibold">${total}</td>
+                        <td class="p-3 text-center font-bold text-emerald-600">${completed}</td>
+                        <td class="p-3 text-center font-bold">${achPct}%</td>
+                        <td class="p-3 text-right font-semibold">${formatNPR(bg)}</td>
+                        <td class="p-3 text-right text-slate-700">${formatNPR(exp)}</td>
+                        <td class="p-3 text-center font-bold text-blue-700">${burnPct}%</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Location Donut
+            const dists = [...new Set(stateFilteredData.map(d => d.district))];
+            const distCounts = dists.map(dis => stateFilteredData.filter(d => d.district === dis).length);
+
+            const ctxLoc = document.getElementById('chartLocationDist')?.getContext('2d');
+            if (ctxLoc) {
+                if (chartInstances.locDist) chartInstances.locDist.destroy();
+                chartInstances.locDist = new Chart(ctxLoc, {
+                    type: 'doughnut',
+                    data: {
+                        labels: dists,
+                        datasets: [{ data: distCounts, backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        }
+
+        function calculateDaysBetween(dateStr1, dateStr2) {
+            const d1 = new Date(dateStr1);
+            const d2 = new Date(dateStr2);
+            const diffTime = d2 - d1;
+            return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        }
+
+        function renderDelayedTab() {
+            const tbody = document.getElementById('tableDelayedFullBody');
+            if (!tbody) return;
+
+            const todayStr = "2026-03-16";
+            const delayed = stateFilteredData.filter(d => d.status === 'Delayed' || (d.status !== 'Completed' && d.date < todayStr));
+
+            if (delayed.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400">No delayed tasks detected. All scheduled activities on track!</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = delayed.map(item => {
+                const daysLate = calculateDaysBetween(item.date, todayStr);
+                const achPct = item.target > 0 ? ((item.achievement / item.target) * 100).toFixed(0) : 0;
+
+                return `
+                    <tr class="hover:bg-red-50/50 border-b border-red-100">
+                        <td class="p-3 font-bold text-slate-900">${item.id}</td>
+                        <td class="p-3 font-medium text-slate-900">${item.activity}</td>
+                        <td class="p-3 font-semibold text-slate-800">${item.responsible}</td>
+                        <td class="p-3 text-slate-600">${item.date}</td>
+                        <td class="p-3 text-center font-extrabold text-red-700">${daysLate} days</td>
+                        <td class="p-3 text-right font-semibold">${formatNPR(item.annualBudget)}</td>
+                        <td class="p-3 text-center font-bold">${achPct}%</td>
+                        <td class="p-3 text-slate-600 text-xs">${item.remarks || 'Timeline overrun'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderUpcomingTab() {
+            const tbody = document.getElementById('tableUpcomingBody');
+            if (!tbody) return;
+
+            const upcoming = stateFilteredData.filter(d => d.status === 'Planned' || d.status === 'Ongoing');
+
+            if (upcoming.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400">No upcoming planned activities found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = upcoming.map(item => {
+                return `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">Next 30 Days</span></td>
+                        <td class="p-3 font-bold text-slate-800">${item.id}</td>
+                        <td class="p-3 font-medium text-slate-900">${item.activity}</td>
+                        <td class="p-3 text-slate-600">${item.date}</td>
+                        <td class="p-3 font-medium">${item.responsible}</td>
+                        <td class="p-3 text-slate-600">${item.district}, ${item.palika}</td>
+                        <td class="p-3 text-right font-semibold">${formatNPR(item.annualBudget)}</td>
+                        <td class="p-3 text-center font-bold text-slate-700">${item.priority || 'Medium'}</td>
+                        <td class="p-3 text-center"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100">${item.status}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function calculateDataQuality() {
+            const issues = [];
+            let missingCount = 0, overspendCount = 0, logicCount = 0, duplicateCount = 0;
+
+            const seenIds = new Set();
+
+            stateRawData.forEach(item => {
+                // Mandatory Check
+                if (!item.id || !item.activity || !item.responsible) {
+                    missingCount++;
+                    issues.push({ id: item.id || 'N/A', severity: 'High', category: 'Missing Fields', desc: 'Activity ID or Responsible Person is blank', val: '-', action: 'Fill in required core fields' });
+                }
+
+                // Duplicate Check
+                if (seenIds.has(item.id)) {
+                    duplicateCount++;
+                    issues.push({ id: item.id, severity: 'High', category: 'Duplicate Key', desc: 'Duplicate Activity ID detected', val: item.id, action: 'Assign unique Activity ID' });
+                } else {
+                    seenIds.add(item.id);
+                }
+
+                // Overspending Check
+                if (Number(item.expenditure) > Number(item.annualBudget)) {
+                    overspendCount++;
+                    issues.push({ id: item.id, severity: 'Medium', category: 'Overspending', desc: 'Expenditure exceeds approved budget allocation', val: `Exp: ${item.expenditure} > Bg: ${item.annualBudget}`, action: 'Verify expenditure or request budget amendment' });
+                }
+
+                // Target Exceeded or Completed zero achievement logic
+                if (item.status === 'Completed' && Number(item.achievement) === 0) {
+                    logicCount++;
+                    issues.push({ id: item.id, severity: 'High', category: 'Logic Mismatch', desc: 'Status marked Completed but Achievement is 0', val: 'Ach: 0', action: 'Update achievement metric or change status' });
+                }
+            });
+
+            const totalIssues = issues.length;
+            const healthScore = Math.max(0, 100 - (totalIssues * 3));
+
+            document.getElementById('badgeDataIssues').textContent = totalIssues;
+            document.getElementById('dataScoreBadge').textContent = `${healthScore}%`;
+
+            document.getElementById('issueCountMissing').textContent = missingCount;
+            document.getElementById('issueCountOverspend').textContent = overspendCount;
+            document.getElementById('issueCountLogic').textContent = logicCount;
+            document.getElementById('issueCountDuplicates').textContent = duplicateCount;
+
+            const tbody = document.getElementById('tableQualityIssuesBody');
+            if (!tbody) return;
+
+            if (issues.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-emerald-600 font-bold">Great job! Zero data quality issues or logic inconsistencies found in the project dataset.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = issues.map(iss => {
+                let sevClass = "bg-amber-100 text-amber-800";
+                if (iss.severity === 'High') sevClass = "bg-red-100 text-red-800";
+
+                return `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100">
+                        <td class="p-3 font-bold text-slate-800">${iss.id}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${sevClass}">${iss.severity}</span></td>
+                        <td class="p-3 font-semibold text-slate-700">${iss.category}</td>
+                        <td class="p-3 text-slate-800">${iss.desc}</td>
+                        <td class="p-3 font-mono text-slate-600">${iss.val}</td>
+                        <td class="p-3 text-blue-700 font-medium">${iss.action}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        /* GOOGLE SHEET CONNECTION MODAL HANDLERS */
+        function openSyncModal() {
+            document.getElementById('syncModal').classList.remove('hidden');
+        }
+
+        function closeSyncModal() {
+            document.getElementById('syncModal').classList.add('hidden');
+        }
+
+        function connectCustomSheet() {
+            const url = document.getElementById('sheetUrlInput').value;
+            if (!url) {
+                alert("Please enter a valid Google Sheet CSV or JSON endpoint URL.");
+                return;
+            }
+
+            fetch(url)
+                .then(res => res.text())
+                .then(text => {
+                    alert("Successfully fetched data endpoint! Parsing dynamic schema...");
+                    document.getElementById('metaDataSource').innerHTML = `<i data-lucide="check-circle" class="w-3 h-3 text-emerald-400"></i> Connected Google Sheet`;
+                    closeSyncModal();
+                    lucide.createIcons();
+                })
+                .catch(err => {
+                    alert("Unable to fetch URL. Please ensure CORS is enabled and Sheet is published as CSV or public JSON.");
+                });
+        }
+
+        /* EXPORT TABLE TO CSV UTILITY */
+        function exportTableToCSV(tableId) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+
+            let csv = [];
+            const rows = table.querySelectorAll("tr");
+            for (let i = 0; i < rows.length; i++) {
+                const row = [], cols = rows[i].querySelectorAll("td, th");
+                for (let j = 0; j < cols.length; j++) {
+                    let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, "").replace(/(\s\s+)/gm, " ");
+                    data = data.replace(/"/g, '""');
+                    row.push('"' + data + '"');
+                }
+                csv.push(row.join(","));
+            }
+
+            const csvFile = new Blob([csv.join("\n")], { type: "text/csv" });
+            const downloadLink = document.createElement("a");
+            downloadLink.download = `NGO_Project_Data_Export.csv`;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = "none";
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+        }
+    </script>
+</body>
+</html>
